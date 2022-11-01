@@ -15,6 +15,13 @@
                             <input type="datetime-local" class="input" v-model="toDateQuery" />
                         </div>
                         <div class="control">
+                            <button @click="clearSearch" class="button is-info" title="Clear search">
+                                <span class="icon">
+                                    <i class="fa fa-x"></i>
+                                </span>
+                            </button>
+                        </div>
+                        <div class="control">
                             <button class="button is-success">
                                 <span class="icon">
                                     <i class="fa fa-search"></i>
@@ -77,6 +84,14 @@ export default {
         this.getLocationData();
     },
     methods: {
+        clearSearch: function() {
+            this.nameQuery = '';
+            this.fromDateQuery = '';
+            this.toDateQuery = '';
+
+            // Need to get unfiltered data
+            this.getLocationData();
+        },
         getLocationData: function() {
             let dateQuery = '';
             if (this.fromDateQuery.length && this.toDateQuery.length) {
