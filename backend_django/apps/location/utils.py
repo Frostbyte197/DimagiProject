@@ -51,3 +51,17 @@ def validate_distance(coords_1, coords_2, last_time):
 
     return speed <= max_speed
 
+# Extracts the email and location details from an SMS body
+# Expects message to be in form 'email=email@email.com;location="Place"' with a ;
+# being used as the delimiter
+def extract_sms(data):
+    message_data = data['message'].split(';')
+    email = message_data[0][message_data[0].find('=')+1:]
+    location = message_data[1][ message_data[1].find('=')+1:]
+
+    extracted_data = {
+        'email': email,
+        'location': location
+    }
+
+    return extracted_data

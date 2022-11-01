@@ -1,8 +1,8 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
-from rest_framework.generics import ListCreateAPIView
+from rest_framework.generics import ListCreateAPIView, CreateAPIView
 
-from .utils import fetch_location, validate_distance
+from .utils import fetch_location, validate_distance, extract_sms
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -11,17 +11,24 @@ from .models import LocationRecord
 from .serializers import LocationRecordSerializer
 
 from datetime import datetime
+import requests
 
 class LocationRecordListCreateAPIView(ListCreateAPIView):
-    queryset = LocationRecord.objects.all()
+    queryset = LocationRecord.objects.all().order_by('-location_date')
     serializer_class = LocationRecordSerializer
 
     def post(self, request, *args, **kwargs):
-        # Need city name for location calculations and API request
-        if 'city_name' not in request.data:
-            print("No city name given")
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        # Check if we are dealing with an SMS request
+        if 'message' in request.data:
+            data = extract_sms(request.data)
+            request.data['email'] = data['email']
+            request.data['city_name'] = data['location']
 
+        # Make sure we have valid POST data
+        if 'email' not in request.data or 'city_name' not in request.data:
+            print("No email/location given")
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+            
         # Fetch location from external API based on user's location
         new_location_data = fetch_location(request.data['city_name'])
         request.data['lat'] = new_location_data['lat']
