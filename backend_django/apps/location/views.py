@@ -6,8 +6,11 @@ from .utils import fetch_location, validate_distance
 from rest_framework import status
 from rest_framework.response import Response
 
+from django.db.models import Q
 from .models import LocationRecord
 from .serializers import LocationRecordSerializer
+
+from datetime import datetime
 
 class LocationRecordListCreateAPIView(ListCreateAPIView):
     queryset = LocationRecord.objects.all()
@@ -39,3 +42,30 @@ class LocationRecordListCreateAPIView(ListCreateAPIView):
 
         return self.create(request, *args, **kwargs)
 
+    def get(self, request, *args, **kwargs):
+        # Add filters, if requested
+        q = Q()
+        if 'email' in request.GET:
+            q &= Q(email__icontains=request.GET['email'])
+            print("Querying with", request.GET['email'])
+
+        if 'from_date' in request.GET:
+            try:
+                from_date_str = request.GET['from_date']
+                from_date = datetime.strptime(from_date_str, "%Y-%m-%dT%H:%M")
+                q &= Q(location_date__gte=from_date)
+            except Exception as e:
+                print("Failed processing from date", e)
+
+        if 'to_date' in request.GET:
+            try:
+                to_date_str = request.GET['to_date']
+                to_date = datetime.strptime(to_date_str, "%Y-%m-%dT%H:%M")
+                q &= Q(location_date__lte=to_date)
+            except Exception as e:
+                print("Failed processing to date", e)
+
+        locations = LocationRecord.objects.filter(q)
+        serializer = LocationRecordSerializer(locations, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
